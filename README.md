@@ -1,2 +1,2 @@
 # health-information-system-
-a basic health information system for managing clients and health programs/services.
+Simulating a basic health information system for managing clients and health programs/services.

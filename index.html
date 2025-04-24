@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Information System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        .success {
+            color: green;
+            margin-top: 10px;
+        }
+        .info {
+            color: #555;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Health Information System</h1>
+
+        <!-- Create Health Program -->
+        <div class="card">
+            <h2>Create Health Program</h2>
+            <div class="form-group">
+                <label for="programName">Program Name</label>
+                <input type="text" id="programName" placeholder="e.g., TB, Malaria, HIV">
+            </div>
+            <button onclick="createProgram()">Create Program</button>
+            <div id="programMessage"></div>
+        </div>
+
+        <!-- Register Client -->
+        <div class="card">
+            <h2>Register New Client</h2>
+            <div class="form-group">
+                <label for="clientName">Full Name</label>
+                <input type="text" id="clientName" placeholder="Enter client name">
+            </div>
+            <div class="form-group">
+                <label for="clientDob">Date of Birth</label>
+                <input type="date" id="clientDob">
+            </div>
+            <div class="form-group">
+                <label for="clientGender">Gender</label>
+                <select id="clientGender">
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <button onclick="registerClient()">Register Client</button>
+            <div id="clientMessage"></div>
+        </div>
+
+        <!-- Enroll Client in Program -->
+        <div class="card">
+            <h2>Enroll Client in Program</h2>
+            <div class="form-group">
+                <label for="enrollClientId">Client ID</label>
+                <input type="text" id="enrollClientId" placeholder="Enter client ID">
+            </div>
+            <div class="form-group">
+                <label for="enrollProgram">Program</label>
+                <select id="enrollProgram"></select>
+            </div>
+            <button onclick="enrollClient()">Enroll</button>
+            <div id="enrollMessage"></div>
+        </div>
+
+        <!-- Search Clients -->
+        <div class="card">
+            <h2>Search Clients</h2>
+            <div class="form-group">
+                <label for="searchQuery">Search by Name or ID</label>
+                <input type="text" id="searchQuery" placeholder="Enter name or ID">
+            </div>
+            <button onclick="searchClients()">Search</button>
+            <div id="searchMessage"></div>
+            <table id="clientsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>DOB</th>
+                        <th>Gender</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- Client Profile -->
+        <div class="card" id="profileCard" style="display: none;">
+            <h2>Client Profile</h2>
+            <div id="clientProfile"></div>
+        </div>
+    </div>
+
+    <script>
+        // Load programs for enrollment dropdown
+        async function loadPrograms() {
+            try {
+                const response = await fetch('http://localhost:5000/api/programs');
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                const programs = await response.json();
+                const select = document.getElementById('enrollProgram');
+                select.innerHTML = '<option value="">Select Program</option>';
+                programs.forEach(program => {
+                    select.innerHTML += `<option value="${program.id}">${program.name}</option>`;
+                });
+            } catch (error) {
+                console.error('Error loading programs:', error);
+            }
+        }
+
+        // Create new health program
+        async function createProgram() {
+            const name = document.getElementById('programName').value;
+            const messageDiv = document.getElementById('programMessage');
+            
+            if (!name) {
+                messageDiv.className = 'error';
+                messageDiv.textContent = 'Program name is required';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:5000/api/programs', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                const result = await response.json();
+                messageDiv.className = 'success';
+                messageDiv.textContent = result.message;
+                document.getElementById('programName').value = '';
+                loadPrograms();
+            } catch (error) {
+                messageDiv.className = 'error';
+                messageDiv.textContent = 'Error creating program: ' + error.message;
+            }
+        }
+
+        // Register new client
+        async function registerClient() {
+            const name = document.getElementById('clientName').value;
+            const dob = document.getElementById('clientDob').value;
+            const gender = document.getElementById('clientGender').value;
+            const messageDiv = document.getElementById('clientMessage');
+
+            if (!name || !dob) {
+                messageDiv.className = 'error';
+                messageDiv.textContent = 'Name and date of birth are required';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:5000/api/clients', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, dob, gender })
+                });
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                const result = await response.json();
+                messageDiv.className = 'success';
+                messageDiv.textContent = result.message;
+                document.getElementById('clientName').value = '';
+                document.getElementById('clientDob').value = '';
+            } catch (error) {
+                messageDiv.className = 'error';
+                messageDiv.textContent = 'Error registering client: ' + error.message;
+            }
+        }
+
+        // Enroll client in program
+        async function enrollClient() {
+            const clientId = document.getElementById('enrollClientId').value;
+            const programId = document.getElementById('enrollProgram').value;
+            const messageDiv = document.getElementById('enrollMessage');
+
+            if (!clientId || !programId) {
+                messageDiv.className = 'error';
+                messageDiv.textContent = 'Client ID and program are required';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:5000/api/enrollments', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clientId, programId })
+                });
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                const result = await response.json();
+                messageDiv.className = 'success';
+                messageDiv.textContent = result.message;
+                document.getElementById('enrollClientId').value = '';
+                document.getElementById('enrollProgram').value = '';
+            } catch (error) {
+                messageDiv.className = 'error';
+                messageDiv.textContent = 'Error enrolling client: ' + error.message;
+            }
+        }
+
+        // Search clients
+        async function searchClients() {
+            const query = document.getElementById('searchQuery').value;
+            const tbody = document.querySelector('#clientsTable tbody');
+            const messageDiv = document.getElementById('searchMessage');
+            
+            try {
+                const response = await fetch(`http://localhost:5000/api/clients?search=${encodeURIComponent(query)}`);
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                const clients = await response.json();
+                tbody.innerHTML = '';
+                messageDiv.textContent = '';
+                
+                if (clients.length === 0) {
+                    messageDiv.className = 'info';
+                    messageDiv.textContent = 'No clients found';
+                    return;
+                }
+
+                clients.forEach(client => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${client.id}</td>
+                            <td>${client.name}</td>
+                            <td>${client.dob}</td>
+                            <td>${client.gender}</td>
+                            <td><button onclick="viewProfile('${client.id}')">View Profile</button></td>
+                        </tr>
+                    `;
+                });
+            } catch (error) {
+                console.error('Search error:', error);
+                tbody.innerHTML = '<tr><td colspan="5">Error loading clients</td></tr>';
+                messageDiv.className = 'error';
+                messageDiv.textContent = 'Error searching clients: ' + error.message;
+            }
+        }
+
+        // View client profile
+        async function viewProfile(clientId) {
+            try {
+                const response = await fetch(`http://localhost:5000/api/clients/${clientId}`);
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                const client = await response.json();
+                const profileDiv = document.getElementById('clientProfile');
+                document.getElementById('profileCard').style.display = 'block';
+
+                profileDiv.innerHTML = `
+                    <p><strong>ID:</strong> ${client.id}</p>
+                    <p><strong>Name:</strong> ${client.name}</p>
+                    <p><strong>Date of Birth:</strong> ${client.dob}</p>
+                    <p><strong>Gender:</strong> ${client.gender}</p>
+                    <p><strong>Enrolled Programs:</strong> ${client.programs.map(p => p.name).join(', ') || 'None'}</p>
+                `;
+            } catch (error) {
+                console.error('Profile error:', error);
+                document.getElementById('clientProfile').innerHTML = '<p class="error">Error loading profile: ' + error.message;
+            }
+        }
+
+        // Initial load
+        loadPrograms();
+    </script>
+</body>
+</html>

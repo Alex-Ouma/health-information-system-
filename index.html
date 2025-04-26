@@ -4,83 +4,60 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Health Information System</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f0f2f5;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .card {
-            background: white;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #2c3e50;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        input, select {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        button {
-            background-color: #3498db;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #2980b9;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            padding: 12px;
-            border: 1px solid #ddd;
-            text-align: left;
-        }
-        th {
-            background-color: #3498db;
-            color: white;
-        }
-        .error {
-            color: red;
-            margin-top: 10px;
-        }
-        .success {
-            color: green;
-            margin-top: 10px;
-        }
-        .info {
-            color: #555;
-            margin-top: 10px;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>Health Information System</h1>
+        <h1>HEALTH INFORMATION SYSTEM</h1>
+        <button onclick="toggleAbout()">About</button>
+
+        <!-- Dashboard -->
+        <div class="card">
+            <h2>Dashboard</h2>
+            <div class="dashboard-stats">
+                <div class="stat-box">
+                    <h3>Total Clients</h3>
+                    <p id="totalClients">0</p>
+                </div>
+                <div class="stat-box">
+                    <h3>Total Programs</h3>
+                    <p id="totalPrograms">0</p>
+                </div>
+                <div class="stat-box">
+                    <h3>Total Enrollments</h3>
+                    <p id="totalEnrollments">0</p>
+                </div>
+            </div>
+            <h3>Recent Clients</h3>
+            <table id="recentClientsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>DOB</th>
+                        <th>Gender</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- About -->
+        <div class="card" id="aboutCard" style="display: none;">
+            <h2>About</h2>
+            <p>
+                simulates a basic health information system for managing clients and health programs/services.Key features include:
+                <ul>
+                    <li>Create a health program  (e.g., TB, Malaria, HIV).</li>
+                    <li>Register a new client in the system</li>
+                    <li>Enroll a client in one or more programs</li>
+                    <li>Search for a client from a list of registered clients</li>
+                    <li>View a client's profile, including the programs they are enrolled in</li>
+                </ul>
+                Built with a user-friendly interface and secure backend, this system ensures accurate data handling and improved healthcare delivery.
+            </p>
+        </div>
 
         <!-- Create Health Program -->
         <div class="card">
@@ -162,6 +139,40 @@
     </div>
 
     <script>
+        // Toggle About section visibility
+        function toggleAbout() {
+            const aboutCard = document.getElementById('aboutCard');
+            aboutCard.style.display = aboutCard.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Load dashboard data
+        async function loadDashboard() {
+            try {
+                const response = await fetch('http://localhost:5000/api/dashboard');
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                const data = await response.json();
+                document.getElementById('totalClients').textContent = data.total_clients;
+                document.getElementById('totalPrograms').textContent = data.total_programs;
+                document.getElementById('totalEnrollments').textContent = data.total_enrollments;
+
+                const tbody = document.querySelector('#recentClientsTable tbody');
+                tbody.innerHTML = '';
+                data.recent_clients.forEach(client => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${client.id}</td>
+                            <td>${client.name}</td>
+                            <td>${client.dob}</td>
+                            <td>${client.gender}</td>
+                            <td><button onclick="viewProfile('${client.id}')">View Profile</button></td>
+                        </tr>
+                    `;
+                });
+            } catch (error) {
+                console.error('Dashboard error:', error);
+            }
+        }
+
         // Load programs for enrollment dropdown
         async function loadPrograms() {
             try {
@@ -201,6 +212,7 @@
                 messageDiv.textContent = result.message;
                 document.getElementById('programName').value = '';
                 loadPrograms();
+                loadDashboard();
             } catch (error) {
                 messageDiv.className = 'error';
                 messageDiv.textContent = 'Error creating program: ' + error.message;
@@ -232,6 +244,7 @@
                 messageDiv.textContent = result.message;
                 document.getElementById('clientName').value = '';
                 document.getElementById('clientDob').value = '';
+                loadDashboard();
             } catch (error) {
                 messageDiv.className = 'error';
                 messageDiv.textContent = 'Error registering client: ' + error.message;
@@ -262,6 +275,7 @@
                 messageDiv.textContent = result.message;
                 document.getElementById('enrollClientId').value = '';
                 document.getElementById('enrollProgram').value = '';
+                loadDashboard();
             } catch (error) {
                 messageDiv.className = 'error';
                 messageDiv.textContent = 'Error enrolling client: ' + error.message;
@@ -330,6 +344,7 @@
 
         // Initial load
         loadPrograms();
+        loadDashboard();
     </script>
 </body>
 </html>
